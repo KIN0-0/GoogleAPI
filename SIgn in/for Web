@@ -1,0 +1,68 @@
+// 웹 브라우저 용
+
+import React, { useCallback, useEffect, useState } from 'react';
+import GoogleLogin from 'react-google-login';
+import { gapi } from 'gapi-script';
+
+const clientId = '[Your web client id]';
+
+const GoogleButton = () => {
+  const [isSignedIn, setIsSignedIn] = useState(false);
+
+  useEffect(() => {
+    function start() {
+      gapi.client.init({
+        clientId,
+        scope: 'email',
+        prompt: 'select_account',
+      }).then(() => {
+        const auth2 = gapi.auth2.getAuthInstance();
+        setIsSignedIn(auth2.isSignedIn.get());
+        auth2.isSignedIn.listen((isSignedIn) => {
+          setIsSignedIn(isSignedIn);
+        });
+      });
+    }
+    gapi.load('client:auth2', start);
+  }, []);
+
+  const onSuccess = (res) => {
+    console.log(res);
+  };
+
+  const onFailure = (res) => {
+    console.log(res);
+  };
+
+  const handleLogout = useCallback(() => {
+    const auth2 = gapi.auth2.getAuthInstance();
+    if (auth2) {
+      auth2.disconnect().then(() => {
+        setIsSignedIn(false);
+        console.log('로그아웃 되었습니다.');
+      });
+    } else {
+      console.log('이미 로그아웃되어 있습니다.');
+    }
+  }, []);
+
+  return (
+    <>
+      {isSignedIn ? (
+        <>
+          <p>{`Signed in as ${gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile().getEmail()}`}</p>
+          <button onClick={handleLogout}>로그아웃</button>
+        </>
+      ) : (
+        <GoogleLogin
+          clientId={clientId}
+          buttonText="Login"
+          onSuccess={onSuccess}
+          onFailure={onFailure}
+        />
+      )}
+    </>
+  );
+};
+
+export default GoogleButton;
